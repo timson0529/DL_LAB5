@@ -3,8 +3,7 @@ import torch.nn as nn
 import numpy as np
 import random
 import gymnasium as gym
-import cv2
-import imageio
+import cv2  
 import ale_py
 import os
 from collections import deque
@@ -113,12 +112,25 @@ def evaluate(args):
         rewards.append(total_reward)
         print(f"Seed {seed}: reward = {total_reward}")
 
-        if args.save_video and ep < args.video_episodes:
+        
+        if args.save_video and ep < args.video_episodes and len(frames) > 0:
             out_path = os.path.join(args.output_dir, f"eval_ep{ep}_reward_{total_reward}.mp4")
-            with imageio.get_writer(out_path, fps=30) as video:
-                for f in frames:
-                    video.append_data(f)
+            
+            
+            height, width, _ = frames[0].shape
+            
+            
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            video = cv2.VideoWriter(out_path, fourcc, 30.0, (width, height))
+            
+            for f in frames:
+                # 顏色轉換
+                bgr_frame = cv2.cvtColor(f, cv2.COLOR_RGB2BGR)
+                video.write(bgr_frame)
+                
+            video.release() 
             print(f"Saved video: {out_path}")
+        
 
     mean_reward = np.mean(rewards)
     std_reward = np.std(rewards)
@@ -146,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=313551076)
     parser.add_argument("--max-episode-steps", type=int, default=10000)
 
-    # 是否存影片。正式算平均分數時可以關掉，demo video 再打開。
+    # 是否存影片?
     parser.add_argument("--save-video", action="store_true")
     parser.add_argument("--video-episodes", type=int, default=1)
 
